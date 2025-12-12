@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "https-login"
-version = "1.1.1"
+version = "1.2.0"
 description = "Tiny HTTPS file server (like python -m http.server) with a simple login page and temp self-signed cert."
 readme = "README.md"
 requires-python = ">=3.9"

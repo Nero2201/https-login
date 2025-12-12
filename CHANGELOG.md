@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2025-12-12)
+
+### Features
+
+- Implementiere IP-Tracking für fehlgeschlagene Anmeldeversuche und verbessere Zertifikatserstellung
+  ([`71be95c`](https://github.com/Nero2201/https-login/commit/71be95c24d1ad233e4ddcb26cb31a021d0c0e5ce))
+
+
 ## v1.1.1 (2025-12-12)
 
 ### Bug Fixes
