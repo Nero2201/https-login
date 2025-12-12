@@ -127,6 +127,7 @@ LOGIN_PAGE = """<!doctype html>
 class LoginHandler(SimpleHTTPRequestHandler):
     pw_hash: str = ""   # PBKDF2 string
     secret: bytes = b""
+    _failed_attempts: dict[str, int] = {}
 
     def _authed(self) -> bool:
         cookie = self.headers.get("Cookie", "")
@@ -146,6 +147,10 @@ class LoginHandler(SimpleHTTPRequestHandler):
         self.wfile.write(html.encode("utf-8"))
 
     def do_GET(self):
+        client_ip = self.client_address[0]
+        if LoginHandler._failed_attempts.get(client_ip, 0) >= 5:
+            self.send_error(403, "Too many failed login attempts. Access blocked.")
+            return
         if self.path.startswith("/__login"):
             return self._send_login()
 
@@ -165,18 +170,15 @@ class LoginHandler(SimpleHTTPRequestHandler):
 
         if not verify_password(pw, self.pw_hash):
             # Track failed attempts by IP address
-                        client_ip = self.client_address[0]
-                        if not hasattr(LoginHandler, '_failed_attempts'):
-                            LoginHandler._failed_attempts = {}
-                        
-                        LoginHandler._failed_attempts[client_ip] = LoginHandler._failed_attempts.get(client_ip, 0) + 1
-                        
-                        if LoginHandler._failed_attempts[client_ip] >= 5:
-                            self.send_error(403, "Too many failed login attempts. Access blocked.")
-                            return
-                        
-                        attempts_left = 5 - LoginHandler._failed_attempts[client_ip]
-                        return self._send_login(f"Wrong password. {attempts_left} attempts left.")
+            client_ip = self.client_address[0]
+            LoginHandler._failed_attempts[client_ip] = LoginHandler._failed_attempts.get(client_ip, 0) + 1
+            
+            if LoginHandler._failed_attempts[client_ip] >= 5:
+                self.send_error(403, "Too many failed login attempts. Access blocked.")
+                return
+            
+            attempts_left = 5 - LoginHandler._failed_attempts[client_ip]
+            return self._send_login(f"Wrong password. {attempts_left} attempts left.")
         # Reset failed attempts on successful login
         client_ip = self.client_address[0]
         if hasattr(LoginHandler, '_failed_attempts') and client_ip in LoginHandler._failed_attempts:
