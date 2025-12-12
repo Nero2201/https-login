@@ -7,8 +7,8 @@ import hashlib
 import hmac
 import os
 import secrets
-#import signal
 import ssl
+import sys
 import tempfile
 import time
 from datetime import datetime, timedelta
@@ -19,6 +19,8 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+
+from https_login import __version__
 
 
 # ──────────────────────────────────────────────────────────────
@@ -219,18 +221,20 @@ def generate_cert(cert_path: str, key_path: str, host: str) -> None:
 
 def main():
     ap = argparse.ArgumentParser(
-        prog="python -m https_login.server",
+        prog="https-login",
         description="HTTPS file server with temporary self-signed cert + simple login (PBKDF2 hash).",
     )
-    ap.add_argument("--bind", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
-    ap.add_argument("--port", type=int, default=8443, help="Port (default: 8443)")
-    ap.add_argument("--dir", default=".", help="Directory to serve (default: current)")
-    ap.add_argument("--host", default="localhost",
+    ap.add_argument("-v","--version", action="version",
+                    version=f"https-login {__version__} from {os.path.dirname(__file__)} (python {sys.version_info.major}.{sys.version_info.minor})")
+    ap.add_argument("-b","--bind", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
+    ap.add_argument("-P","--port", type=int, default=8443, help="Port (default: 8443)")
+    ap.add_argument("-d","--dir", default=".", help="Directory to serve (default: current)")
+    ap.add_argument("-h","--host", default="localhost",
                     help="Hostname/IP used in printed URL and certificate CN/SAN (default: localhost)")
 
-    ap.add_argument("--passfile", default=".https_login_pass",
+    ap.add_argument("-f","--passfile", default=".https_login_pass",
                     help="File containing password hash (default: .https_login_pass)")
-    ap.add_argument("--set-password",
+    ap.add_argument("-sp","--set-password",
                     help="Set password and write hash into passfile, then exit.")
     ap.add_argument("-p", "--password",
                     help="Password used only if passfile does not exist (otherwise ignored). "
