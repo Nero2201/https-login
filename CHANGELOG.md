@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.1 (2025-12-12)
+
+### Bug Fixes
+
+- Ändere Argument für Host von -h zu -H in der Hauptfunktion
+  ([`6fd892a`](https://github.com/Nero2201/https-login/commit/6fd892a36550c4414a86c2eb57d676f67805067e))
+
+
 ## v1.1.0 (2025-12-12)
 
 ### Features
