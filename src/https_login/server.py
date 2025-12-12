@@ -229,7 +229,7 @@ def main():
     ap.add_argument("-b","--bind", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
     ap.add_argument("-P","--port", type=int, default=8443, help="Port (default: 8443)")
     ap.add_argument("-d","--dir", default=".", help="Directory to serve (default: current)")
-    ap.add_argument("-h","--host", default="localhost",
+    ap.add_argument("-H","--host", default="localhost",
                     help="Hostname/IP used in printed URL and certificate CN/SAN (default: localhost)")
 
     ap.add_argument("-f","--passfile", default=".https_login_pass",
