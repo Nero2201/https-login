@@ -27,3 +27,13 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/https_login/__init__.py:__version__"]
+branch = "main"
+tag_format = "v{version}"
+commit_message = "chore(release): {version} [skip ci]"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "python -m build"
