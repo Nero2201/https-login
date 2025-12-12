@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.3.0 (2025-12-12)
+
+### Bug Fixes
+
+- Ändere Standard-Hostname von 'localhost' zu '127.0.0.1' in der Hauptfunktion
+  ([`24c4628`](https://github.com/Nero2201/https-login/commit/24c4628d7a4653da7b757c08e4f150948f3be688))
+
+### Features
+
+- Implementiere IP-Tracking für fehlgeschlagene Anmeldeversuche und blockiere den Zugriff nach 5
+  Fehlversuchen
+  ([`7912c45`](https://github.com/Nero2201/https-login/commit/7912c4532b1756a71dd471bc34283ec779d993cf))
+
+
 ## v1.2.0 (2025-12-12)
 
 ### Features
