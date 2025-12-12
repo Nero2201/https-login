@@ -1,6 +1,7 @@
 # https-login-server
 
-[![PyPI version](https://badge.fury.io/py/https-login.svg)](https://badge.fury.io/py/https-login)
+[![PyPI - Version](https://img.shields.io/pypi/v/https-login)](https://pypi.org/project/https-login/)
+
 
 
 A tiny HTTPS file server (similar to `python -m http.server`) with:
