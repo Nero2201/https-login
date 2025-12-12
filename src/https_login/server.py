@@ -5,13 +5,16 @@ import argparse
 import base64
 import hashlib
 import hmac
+import ipaddress
 import os
 import secrets
 import ssl
 import sys
 import tempfile
 import time
-from datetime import datetime, timedelta
+import threading
+import socket
+from datetime import datetime, timedelta, timezone
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs
 
@@ -110,7 +113,7 @@ LOGIN_PAGE = """<!doctype html>
     <br><br>
     __ERROR__
     <br>
-    <button type="submit">Anmelden</button>
+    <button type="submit">Login</button>
   </form>
 </body>
 </html>
@@ -161,14 +164,31 @@ class LoginHandler(SimpleHTTPRequestHandler):
         pw = (parse_qs(body).get("password") or [""])[0]
 
         if not verify_password(pw, self.pw_hash):
-            return self._send_login("Falsches Passwort.")
+            # Track failed attempts by IP address
+                        client_ip = self.client_address[0]
+                        if not hasattr(LoginHandler, '_failed_attempts'):
+                            LoginHandler._failed_attempts = {}
+                        
+                        LoginHandler._failed_attempts[client_ip] = LoginHandler._failed_attempts.get(client_ip, 0) + 1
+                        
+                        if LoginHandler._failed_attempts[client_ip] >= 5:
+                            self.send_error(403, "Too many failed login attempts. Access blocked.")
+                            return
+                        
+                        attempts_left = 5 - LoginHandler._failed_attempts[client_ip]
+                        return self._send_login(f"Wrong password. {attempts_left} attempts left.")
+        # Reset failed attempts on successful login
+        client_ip = self.client_address[0]
+        if hasattr(LoginHandler, '_failed_attempts') and client_ip in LoginHandler._failed_attempts:
+            del LoginHandler._failed_attempts[client_ip]
+
 
         cookie_val = make_cookie(self.secret)
         self.send_response(302)
         self.send_header("Location", "/")
         self.send_header(
             "Set-Cookie",
-            # Secure ist bei HTTPS korrekt, HttpOnly verhindert JS-Zugriff
+            # Secure is correct for HTTPS, HttpOnly prevents JS access
             f"{COOKIE_NAME}={cookie_val}; Path=/; HttpOnly; SameSite=Strict; Secure"
         )
         self.end_headers()
@@ -186,9 +206,35 @@ def generate_cert(cert_path: str, key_path: str, host: str) -> None:
     ])
 
     san_entries = []
-    # DNSName ist ok für "localhost" etc. Für IPs ist eigentlich x509.IPAddress nötig.
-    # Damit es robust bleibt, legen wir DNSName immer an. (Browserwarnung bleibt sowieso self-signed.)
+    # DNSName is fine for "localhost" etc. For IPs, x509.IPAddress is actually needed.
+    # To keep it robust, we always create DNSName. (Browser warning remains anyway due to self-signed.)
+    # Add the provided host
     san_entries.append(x509.DNSName(host))
+    
+    # Add localhost and 127.0.0.1
+    san_entries.append(x509.DNSName("localhost"))
+    try:
+        san_entries.append(x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")))
+    except Exception:
+        pass
+    
+    # Add network IP addresses
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None):
+            ip = info[4][0]
+            try:
+                # Try IPv4
+                san_entries.append(x509.IPAddress(ipaddress.IPv4Address(ip)))
+            except Exception:
+                try:
+                    # Try IPv6
+                    san_entries.append(x509.IPAddress(ipaddress.IPv6Address(ip)))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
 
     cert = (
         x509.CertificateBuilder()
@@ -196,8 +242,8 @@ def generate_cert(cert_path: str, key_path: str, host: str) -> None:
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.utcnow() - timedelta(minutes=1))
-        .not_valid_after(datetime.utcnow() + timedelta(days=1))
+        .not_valid_before(datetime.now(timezone.utc) - timedelta(minutes=1))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=1))
         .add_extension(x509.SubjectAlternativeName(san_entries), critical=False)
         .sign(key, hashes.SHA256())
     )
@@ -288,8 +334,6 @@ def main():
             print(f"Password:   {used!r}  (no passfile found; consider --set-password)")
         print("self-signed cert => Browser warning is normal.")
         print("Press Ctrl+C to stop.")
-
-        import threading
 
         server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         server_thread.start()
